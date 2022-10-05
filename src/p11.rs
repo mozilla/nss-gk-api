@@ -34,7 +34,6 @@ pub fn hex_with_len(buf: impl AsRef<[u8]>) -> String {
 }
 
 #[allow(clippy::upper_case_acronyms)]
-#[allow(unknown_lints, deref_nullptr)] // Until bindgen#1651 is fixed.
 #[allow(clippy::unreadable_literal)]
 #[allow(unknown_lints, clippy::borrow_as_ptr)]
 mod nss_p11 {
