@@ -33,16 +33,29 @@ use std::ptr::null;
 
 const MINIMUM_NSS_VERSION: &str = "3.74";
 
+#[allow(non_snake_case)]
+#[allow(non_upper_case_globals)]
+pub mod nss_prelude {
+    pub use crate::prtypes::*;
+    pub use _SECStatus::*;
+    include!(concat!(env!("OUT_DIR"), "/nss_prelude.rs"));
+}
+pub use nss_prelude::SECStatus;
+
+
 #[allow(non_upper_case_globals, clippy::redundant_static_lifetimes)]
 #[allow(clippy::upper_case_acronyms)]
 #[allow(unknown_lints, clippy::borrow_as_ptr)]
 mod nss {
+    use crate::nss_prelude::*;
     include!(concat!(env!("OUT_DIR"), "/nss_init.rs"));
 }
 
-// Need to map the types through.
-fn secstatus_to_res(code: nss::SECStatus) -> Res<()> {
-    crate::err::secstatus_to_res(code as crate::ssl::SECStatus)
+pub mod prtypes;
+pub use prtypes::*;
+
+fn secstatus_to_res(code: SECStatus) -> Res<()> {
+    crate::err::secstatus_to_res(code as SECStatus)
 }
 
 enum NssLoaded {

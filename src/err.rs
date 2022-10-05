@@ -10,7 +10,8 @@
 use std::os::raw::c_char;
 use std::str::Utf8Error;
 
-use crate::ssl::{SECStatus, SECSuccess};
+use crate::nss_prelude::*;
+use crate::prtypes::*;
 
 include!(concat!(env!("OUT_DIR"), "/nspr_error.rs"));
 mod codes {

@@ -17,10 +17,6 @@ use std::ops::{Deref, DerefMut};
 use std::os::raw::{c_int, c_uint};
 use std::ptr::null_mut;
 
-// Remap some constants.
-pub const SECSuccess: SECStatus = _SECStatus_SECSuccess;
-pub const SECFailure: SECStatus = _SECStatus_SECFailure;
-
 #[must_use]
 pub fn hex_with_len(buf: impl AsRef<[u8]>) -> String {
     use std::fmt::Write;
@@ -37,9 +33,12 @@ pub fn hex_with_len(buf: impl AsRef<[u8]>) -> String {
 #[allow(clippy::unreadable_literal)]
 #[allow(unknown_lints, clippy::borrow_as_ptr)]
 mod nss_p11 {
+    use crate::prtypes::*;
+    use crate::nss_prelude::*;
     include!(concat!(env!("OUT_DIR"), "/nss_p11.rs"));
 }
 
+use crate::prtypes::*;
 pub use nss_p11::*;
 
 macro_rules! scoped_ptr {

@@ -16,6 +16,7 @@
     clippy::borrow_as_ptr
 )]
 
-use crate::prtypes::*;
+pub use PRStatus_PR_FAILURE as PR_FAILURE;
+pub use PRStatus_PR_SUCCESS as PR_SUCCESS;
 
-include!(concat!(env!("OUT_DIR"), "/nspr_io.rs"));
+include!(concat!(env!("OUT_DIR"), "/nspr_types.rs"));

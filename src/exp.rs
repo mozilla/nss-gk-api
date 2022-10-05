@@ -16,7 +16,7 @@ macro_rules! experimental_api {
             if f.is_null() {
                 return Err(crate::err::Error::InternalError);
             }
-            let f: unsafe extern "C" fn( $( $t ),* ) -> crate::ssl::SECStatus = ::std::mem::transmute(f);
+            let f: unsafe extern "C" fn( $( $t ),* ) -> crate::SECStatus = ::std::mem::transmute(f);
             let rv = f( $( $a ),* );
             crate::err::secstatus_to_res(rv)
         }

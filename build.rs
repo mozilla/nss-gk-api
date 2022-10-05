@@ -10,6 +10,7 @@
 use bindgen::Builder;
 use serde_derive::Deserialize;
 use std::collections::HashMap;
+use std::collections::HashSet;
 use std::env;
 use std::fs;
 use std::path::{Path, PathBuf};
@@ -393,6 +394,36 @@ fn setup_for_gecko() -> Vec<String> {
     unreachable!()
 }
 
+fn process_config(config: &mut HashMap<String, Bindings>) {
+    let mut excludes = HashMap::new();
+    for header in config.keys().cloned() {
+        // Collect the list of types, functions, and variables configured
+        // for generation in any other configured header, and add it to the list
+        // of items excluded from generation in this header. This ensures that
+        // each item only appears in one bindings module, which prevents some
+        // type conflicts. (However, it does mean that appropriate `use`
+        // declarations must be added for the generated modules.)
+        excludes.insert(
+            header.clone(),
+            config.iter().flat_map(|(h, b)| {
+                if *h != header {
+                    vec![
+                        &b.types,
+                        &b.functions,
+                        &b.variables,
+                    ]
+                } else {
+                    vec![]
+                }.into_iter().flat_map(|v| v.iter()).cloned()
+            }).collect::<HashSet<String>>()
+        );
+    }
+
+    for (header, excludes) in excludes.into_iter() {
+        config.get_mut(&header).expect("key disappeared from config?").exclude.extend(excludes.into_iter());
+    }
+}
+
 fn main() {
     let flags = if cfg!(feature = "gecko") {
         setup_for_gecko()
@@ -403,7 +434,8 @@ fn main() {
     let config_file = PathBuf::from(BINDINGS_DIR).join(BINDINGS_CONFIG);
     println!("cargo:rerun-if-changed={}", config_file.to_str().unwrap());
     let config = fs::read_to_string(config_file).expect("unable to read binding configuration");
-    let config: HashMap<String, Bindings> = ::toml::from_str(&config).unwrap();
+    let mut config: HashMap<String, Bindings> = ::toml::from_str(&config).unwrap();
+    process_config(&mut config);
 
     for (k, v) in &config {
         build_bindings(k, v, &flags[..], cfg!(feature = "gecko"));

@@ -16,21 +16,27 @@
 )]
 
 use crate::err::{secstatus_to_res, Res};
+use crate::nss_prelude::*;
+use crate::prio::PRFileDesc;
 
-include!(concat!(env!("OUT_DIR"), "/nss_ssl.rs"));
+mod nss_ssl {
+    use crate::err::PRErrorCode;
+    use crate::nss_prelude::*;
+    use crate::p11::CERTCertList;
+    use crate::prio::{
+        PRFileDesc,
+        PRFileInfo,
+        PRFileInfo64,
+        PRIOVec,
+    };
+
+    include!(concat!(env!("OUT_DIR"), "/nss_ssl.rs"));
+}
+pub use nss_ssl::*;
+
 mod SSLOption {
     include!(concat!(env!("OUT_DIR"), "/nss_sslopt.rs"));
 }
-
-// I clearly don't understand how bindgen operates.
-#[allow(clippy::empty_enum)]
-pub enum PLArenaPool {}
-#[allow(clippy::empty_enum)]
-pub enum PRFileDesc {}
-
-// Remap some constants.
-pub const SECSuccess: SECStatus = _SECStatus_SECSuccess;
-pub const SECFailure: SECStatus = _SECStatus_SECFailure;
 
 #[derive(Debug, Copy, Clone)]
 pub enum Opt {

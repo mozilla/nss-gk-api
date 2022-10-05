@@ -1,28 +1,48 @@
 # In this file, every section corresponds to a header file.
 # A corresponding binding file will be created in $OUT_DIR.
+#
+# This configuration is processed by build.rs to populate `exclude` for each
+# header with the types/variables/functions/enums declared for generation in
+# other headers.
+
+[nspr_types]
+types = [
+    "PRBool",
+    "PRIntn",
+    "PRInt16",
+    "PRInt32",
+    "PRInt64",
+    "PROffset32",
+    "PROffset64",
+    "PRSize",
+    "PRStatus",
+    "PRUintn",
+    "PRUint8",
+    "PRUint16",
+    "PRUint32",
+    "PRUint64",
+    "PRUword",
+]
+variables = [
+    "PR_FALSE",
+    "PR_TRUE",
+]
+
+[nss_prelude]
+types = [
+    "SECStatus",
+]
+enums = [
+    "_SECStatus",
+]
 
 [nss_ssl]
 types = [
-    "HpkeSymmetricSuite",
-    "PRCList",
-    "PRUint16",
-    "PRUint64",
-    "PRUint8",
-    "SECStatus",
-    "SSLAeadContext",
-    "SSLExtensionHandler",
+    "SSLAlertDescription",
     "SSLExtensionType",
-    "SSLExtensionWriter",
-    "SSLHelloRetryRequestAction",
-    "SSLHelloRetryRequestCallback",
     "SSLNamedGroup",
     "SSLProtocolVariant",
-    "SSLRecordWriteCallback",
-    "SSLResumptionTokenCallback",
-    "SSLResumptionTokenInfo",
-    "SSLSecretCallback",
     "SSLSignatureScheme",
-    "SSLTimeFunc",
 ]
 functions = [
     "SSL_AlertSentCallback",
@@ -33,7 +53,6 @@ functions = [
     "SSL_ConfigServerSessionIDCache",
     "SSL_DestroyResumptionTokenInfo",
     "SSL_GetChannelInfo",
-    "SSL_GetExperimentalAPI",
     "SSL_GetImplementedCiphers",
     "SSL_GetNextProto",
     "SSL_GetNumImplementedCiphers",
@@ -54,23 +73,16 @@ functions = [
     "SSL_VersionRangeSet",
 ]
 enums = [
-    "HpkeAeadId",
-    "HpkeKdfId",
     "SSLAuthType",
     "SSLCipherAlgorithm",
     "SSLCompressionMethod",
-    "SSLContentType",
     "SSLExtensionType",
-    "SSLHandshakeType",
-    "SSLHelloRetryRequestAction",
     "SSLKEAType",
     "SSLMACAlgorithm",
     "SSLNamedGroup",
     "SSLNextProtoState",
     "SSLProtocolVariant",
-    "SSLSecretDirection",
     "SSLSignatureScheme",
-    "SECStatus",
 ]
 variables = [
     "SSL_LIBRARY_VERSION_TLS_\\d_\\d",
@@ -80,8 +92,6 @@ variables = [
 opaque = [
     "CERTCertificate",
     "PK11SymKey",
-    "PLArenaPool",
-    "PRFileDesc",
     "SECKEYPrivateKey",
     "SECKEYPublicKey",
     "SSLExtraServerCertData",
@@ -215,15 +225,12 @@ variables = [
 ]
 
 [nspr_err]
-# NSPR doesn't use an enum for errors, so we have to pull in everything in the header file.
-# Specifying no types, functions, or variables does that, but then exclude some.
-exclude = [
-    "nspr_.*",
-    "PR_MAX_ERROR",
-    "ERROR_TABLE_BASE_nspr"
-]
+variables = ["PR_.*_ERROR"]
 
 [nspr_error]
+types = [
+    "PRErrorCode",
+]
 functions = [
     "PR_ErrorToName",
     "PR_ErrorToString",
@@ -235,7 +242,16 @@ variables = [
 ]
 
 [nspr_io]
-types = ["PRIOMethods"]
+types = [
+    "PRFileDesc",
+    "PRFileInfo",
+    "PRFileInfo64",
+    "PRFilePrivate",
+    "PRIOMethods",
+    "PRIOVec",
+    "PRSeekFN",
+    "PRSeek64FN",
+]
 functions = [
     "PR_Close",
     "PR_CreateIOLayerStub",
@@ -246,18 +262,15 @@ variables = [
 ]
 # opaque is for the stuff we don't plan to use, but we need for function signatures.
 opaque = [
+    "PRFileDesc",
     "PRFileInfo",
     "PRFileInfo64",
     "PRFilePrivate",
     "PRIOVec",
-    "PRSendFileData",
 ]
 enums = [
     "PRDescType",
-    "PRStatus",
     "PRSeekWhence",
-    "PRSockOption",
-    "PRTransmitFileFlags",
 ]
 
 [nspr_time]

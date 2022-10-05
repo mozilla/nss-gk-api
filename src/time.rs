@@ -6,6 +6,7 @@
 
 #![allow(clippy::upper_case_acronyms)]
 
+use crate::nss_prelude::PRInt64;
 use crate::err::{Error, Res};
 //use crate::prio::PRFileDesc;
 //use crate::ssl::SSLTimeFunc;
