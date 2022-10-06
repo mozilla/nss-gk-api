@@ -10,12 +10,11 @@
 #![allow(non_snake_case)]
 
 use crate::err::{secstatus_to_res, Error, Res};
+use crate::util::SECItemMut;
 
 use std::convert::TryFrom;
-use std::mem;
 use std::ops::{Deref, DerefMut};
 use std::os::raw::{c_int, c_uint};
-use std::ptr::null_mut;
 
 #[must_use]
 pub fn hex_with_len(buf: impl AsRef<[u8]>) -> String {
@@ -141,26 +140,16 @@ impl PrivateKey {
     /// # Panics
     /// When the values are too large to fit.  So never.
     pub fn key_data(&self) -> Res<Vec<u8>> {
-        let mut key_item = Item::make_empty();
+        let mut key_item = SECItemMut::make_empty();
         secstatus_to_res(unsafe {
             PK11_ReadRawAttribute(
                 PK11ObjectType::PK11_TypePrivKey,
                 (**self).cast(),
                 CK_ATTRIBUTE_TYPE::from(CKA_VALUE),
-                &mut key_item,
+                key_item.as_mut(),
             )
         })?;
-        let slc = unsafe {
-            std::slice::from_raw_parts(key_item.data, usize::try_from(key_item.len).unwrap())
-        };
-        let key = Vec::from(slc);
-        // The data that `key_item` refers to needs to be freed, but we can't
-        // use the scoped `Item` implementation.  This is OK as long as nothing
-        // panics between `PK11_ReadRawAttribute` succeeding and here.
-        unsafe {
-            SECITEM_FreeItem(&mut key_item, PRBool::from(false));
-        }
-        Ok(key)
+        Ok(key_item.as_slice().to_owned())
     }
 }
 unsafe impl Send for PrivateKey {}
@@ -201,9 +190,9 @@ impl SymKey {
     /// # Errors
     /// Internal errors in case of failures in NSS.
     pub fn as_bytes(&self) -> Res<&[u8]> {
-        secstatus_to_res(unsafe { PK11_ExtractKeyValue(self.ptr) })?;
+        secstatus_to_res(unsafe { PK11_ExtractKeyValue(**self) })?;
 
-        let key_item = unsafe { PK11_GetKeyData(self.ptr) };
+        let key_item = unsafe { PK11_GetKeyData(**self) };
         // This is accessing a value attached to the key, so we can treat this as a borrow.
         match unsafe { key_item.as_mut() } {
             None => Err(Error::InternalError),
@@ -235,59 +224,6 @@ unsafe fn destroy_pk11_context(ctxt: *mut PK11Context) {
     PK11_DestroyContext(ctxt, PRBool::from(true));
 }
 scoped_ptr!(Context, PK11Context, destroy_pk11_context);
-
-unsafe fn destroy_secitem(item: *mut SECItem) {
-    SECITEM_FreeItem(item, PRBool::from(true));
-}
-scoped_ptr!(Item, SECItem, destroy_secitem);
-
-impl Item {
-    /// Create a wrapper for a slice of this object.
-    /// Creating this object is technically safe, but using it is extremely dangerous.
-    /// Minimally, it can only be passed as a `const SECItem*` argument to functions,
-    /// or those that treat their argument as `const`.
-    pub fn wrap(buf: &[u8]) -> SECItem {
-        SECItem {
-            type_: SECItemType::siBuffer,
-            data: buf.as_ptr() as *mut u8,
-            len: c_uint::try_from(buf.len()).unwrap(),
-        }
-    }
-
-    /// Create a wrapper for a struct.
-    /// Creating this object is technically safe, but using it is extremely dangerous.
-    /// Minimally, it can only be passed as a `const SECItem*` argument to functions,
-    /// or those that treat their argument as `const`.
-    pub fn wrap_struct<T>(v: &T) -> SECItem {
-        SECItem {
-            type_: SECItemType::siBuffer,
-            data: (v as *const T as *mut T).cast(),
-            len: c_uint::try_from(mem::size_of::<T>()).unwrap(),
-        }
-    }
-
-    /// Make an empty `SECItem` for passing as a mutable `SECItem*` argument.
-    pub fn make_empty() -> SECItem {
-        SECItem {
-            type_: SECItemType::siBuffer,
-            data: null_mut(),
-            len: 0,
-        }
-    }
-
-    /// This dereferences the pointer held by the item and makes a copy of the
-    /// content that is referenced there.
-    ///
-    /// # Safety
-    /// This dereferences two pointers.  It doesn't get much less safe.
-    pub unsafe fn into_vec(self) -> Vec<u8> {
-        let b = self.ptr.as_ref().unwrap();
-        // Sanity check the type, as some types don't count bytes in `Item::len`.
-        assert_eq!(b.type_, SECItemType::siBuffer);
-        let slc = std::slice::from_raw_parts(b.data, usize::try_from(b.len).unwrap());
-        Vec::from(slc)
-    }
-}
 
 /// Generate a randomized buffer.
 /// # Panics

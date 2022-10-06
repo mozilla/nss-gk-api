@@ -16,6 +16,8 @@
 mod exp;
 #[macro_use]
 pub mod p11;
+#[macro_use]
+mod util;
 
 mod err;
 mod prio;
@@ -24,6 +26,7 @@ pub mod time;
 
 pub use err::{Error, PRErrorCode, Res};
 pub use p11::{PrivateKey, PublicKey, SymKey};
+pub use util::*;
 
 use once_cell::sync::OnceCell;
 
@@ -40,8 +43,7 @@ pub mod nss_prelude {
     pub use _SECStatus::*;
     include!(concat!(env!("OUT_DIR"), "/nss_prelude.rs"));
 }
-pub use nss_prelude::SECStatus;
-
+pub use nss_prelude::{SECItem, SECItemArray, SECItemType, SECStatus};
 
 #[allow(non_upper_case_globals, clippy::redundant_static_lifetimes)]
 #[allow(clippy::upper_case_acronyms)]

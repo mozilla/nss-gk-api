@@ -5,3 +5,4 @@
 // except according to those terms.
 
 #include "seccomon.h"
+#include "secitem.h"
