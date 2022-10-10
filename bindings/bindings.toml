@@ -97,10 +97,6 @@ variables = [
     "ssl_preinfo_.*",
 ]
 opaque = [
-    "CERTCertificate",
-    "PK11SymKey",
-    "SECKEYPrivateKey",
-    "SECKEYPublicKey",
     "SSLExtraServerCertData",
 ]
 
@@ -200,12 +196,12 @@ enums = [
     "SECOidTag",
 ]
 opaque = [
-    "CERTCertificate",
-    "PK11Context",
-    "PK11SlotInfo",
-    "PK11SymKey",
-    "SECKEYPrivateKey",
-    "SECKEYPublicKey",
+    "CERTCertificateStr",
+    "PK11ContextStr",
+    "PK11SlotInfoStr",
+    "PK11SymKeyStr",
+    "SECKEYPrivateKeyStr",
+    "SECKEYPublicKeyStr",
 ]
 variables = [
     "CKA_DERIVE",

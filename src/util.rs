@@ -13,6 +13,67 @@ use std::ptr::null_mut;
 use crate::prtypes::*;
 use crate::nss_prelude::*;
 
+/// Implement a smart pointer for NSS objects.
+///
+/// Most of the time the pointer is like a `Box`, but there are exceptions (e.g.
+/// PK11SymKey is internally reference counted so its pointer is like an `Arc`.)
+///
+/// Named "scoped" because that is what NSS calls its `unique_ptr` typedefs.
+macro_rules! scoped_ptr {
+    ($name:ident, $target:ty, $dtor:path) => {
+        pub struct $name {
+            ptr: *mut $target,
+        }
+
+        impl $name {
+            /// Create a new instance of `$name` from a pointer.
+            ///
+            /// # Errors
+            /// When passed a null pointer generates an error.
+            pub unsafe fn from_ptr(ptr: *mut $target) -> Result<Self, $crate::err::Error> {
+                $crate::err::IntoResult::into_result(ptr)
+            }
+        }
+
+        impl $crate::err::IntoResult for *mut $target {
+            type Ok = $name;
+
+            unsafe fn into_result(self) -> Result<Self::Ok, $crate::err::Error> {
+                $name::from_ptr(self)
+            }
+        }
+
+        impl std::ops::Deref for $name {
+            type Target = *mut $target;
+            #[must_use]
+            fn deref(&self) -> &*mut $target {
+                &self.ptr
+            }
+        }
+
+        // Original implements DerefMut, but is that really a good idea?
+
+        impl Drop for $name {
+            fn drop(&mut self) {
+                unsafe { $dtor(self.ptr) };
+            }
+        }
+    }
+}
+
+macro_rules! impl_clone {
+    ($name:ty, $nss_fn:path) => {
+        impl Clone for $name {
+            #[must_use]
+            fn clone(&self) -> Self {
+                let ptr = unsafe { $nss_fn(self.ptr) };
+                assert!(!ptr.is_null());
+                Self { ptr }
+            }
+        }
+    }
+}
+
 impl SECItem {
     /// Return contents as a slice.
     ///

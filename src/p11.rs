@@ -13,7 +13,6 @@ use crate::err::{secstatus_to_res, Error, Res};
 use crate::util::SECItemMut;
 
 use std::convert::TryFrom;
-use std::ops::{Deref, DerefMut};
 use std::os::raw::{c_int, c_uint};
 
 #[must_use]
@@ -40,52 +39,11 @@ mod nss_p11 {
 use crate::prtypes::*;
 pub use nss_p11::*;
 
-macro_rules! scoped_ptr {
-    ($scoped:ident, $target:ty, $dtor:path) => {
-        pub struct $scoped {
-            ptr: *mut $target,
-        }
-
-        impl $scoped {
-            /// Create a new instance of `$scoped` from a pointer.
-            ///
-            /// # Errors
-            /// When passed a null pointer generates an error.
-            pub fn from_ptr(ptr: *mut $target) -> Result<Self, crate::err::Error> {
-                if ptr.is_null() {
-                    Err(crate::err::Error::last_nss_error())
-                } else {
-                    Ok(Self { ptr })
-                }
-            }
-        }
-
-        impl Deref for $scoped {
-            type Target = *mut $target;
-            #[must_use]
-            fn deref(&self) -> &*mut $target {
-                &self.ptr
-            }
-        }
-
-        impl DerefMut for $scoped {
-            fn deref_mut(&mut self) -> &mut *mut $target {
-                &mut self.ptr
-            }
-        }
-
-        impl Drop for $scoped {
-            #[allow(unused_must_use)]
-            fn drop(&mut self) {
-                unsafe { $dtor(self.ptr) };
-            }
-        }
-    };
-}
-
 scoped_ptr!(Certificate, CERTCertificate, CERT_DestroyCertificate);
 scoped_ptr!(CertList, CERTCertList, CERT_DestroyCertList);
+
 scoped_ptr!(PublicKey, SECKEYPublicKey, SECKEY_DestroyPublicKey);
+impl_clone!(PublicKey, SECKEY_CopyPublicKey);
 
 impl PublicKey {
     /// Get the HPKE serialization of the public key.
@@ -110,15 +68,6 @@ impl PublicKey {
     }
 }
 
-impl Clone for PublicKey {
-    #[must_use]
-    fn clone(&self) -> Self {
-        let ptr = unsafe { SECKEY_CopyPublicKey(self.ptr) };
-        assert!(!ptr.is_null());
-        Self { ptr }
-    }
-}
-
 impl std::fmt::Debug for PublicKey {
     fn fmt(&self, f: &mut std::fmt::Formatter) -> std::fmt::Result {
         if let Ok(b) = self.key_data() {
@@ -130,6 +79,7 @@ impl std::fmt::Debug for PublicKey {
 }
 
 scoped_ptr!(PrivateKey, SECKEYPrivateKey, SECKEY_DestroyPrivateKey);
+impl_clone!(PrivateKey, SECKEY_CopyPrivateKey);
 
 impl PrivateKey {
     /// Get the bits of the private key.
@@ -152,16 +102,6 @@ impl PrivateKey {
         Ok(key_item.as_slice().to_owned())
     }
 }
-unsafe impl Send for PrivateKey {}
-
-impl Clone for PrivateKey {
-    #[must_use]
-    fn clone(&self) -> Self {
-        let ptr = unsafe { SECKEY_CopyPrivateKey(self.ptr) };
-        assert!(!ptr.is_null());
-        Self { ptr }
-    }
-}
 
 impl std::fmt::Debug for PrivateKey {
     fn fmt(&self, f: &mut std::fmt::Formatter) -> std::fmt::Result {
@@ -177,12 +117,13 @@ scoped_ptr!(Slot, PK11SlotInfo, PK11_FreeSlot);
 
 impl Slot {
     pub fn internal() -> Res<Self> {
-        let p = unsafe { PK11_GetInternalSlot() };
-        Slot::from_ptr(p)
+        unsafe { Slot::from_ptr(PK11_GetInternalSlot()) }
     }
 }
 
+// Note: PK11SymKey is internally reference counted
 scoped_ptr!(SymKey, PK11SymKey, PK11_FreeSymKey);
+impl_clone!(SymKey, PK11_ReferenceSymKey);
 
 impl SymKey {
     /// You really don't want to use this.
@@ -198,15 +139,6 @@ impl SymKey {
             None => Err(Error::InternalError),
             Some(key) => Ok(unsafe { std::slice::from_raw_parts(key.data, key.len as usize) }),
         }
-    }
-}
-
-impl Clone for SymKey {
-    #[must_use]
-    fn clone(&self) -> Self {
-        let ptr = unsafe { PK11_ReferenceSymKey(self.ptr) };
-        assert!(!ptr.is_null());
-        Self { ptr }
     }
 }
 
@@ -237,6 +169,8 @@ pub fn random(size: usize) -> Vec<u8> {
     .unwrap();
     buf
 }
+
+impl_into_result!(SECOidData);
 
 #[cfg(test)]
 mod test {

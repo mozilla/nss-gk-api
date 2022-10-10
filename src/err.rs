@@ -149,7 +149,6 @@ pub unsafe fn into_result<P>(ptr: *mut P) -> Result<*mut P, Error> {
 
 // This can be used to implement `IntoResult` for pointer types that do not make
 // sense as smart pointers. For smart pointers use `scoped_ptr!`.
-#[allow(unused_macros)] // TODO: temporary, used in an upcoming commit
 macro_rules! impl_into_result {
     ($pointer:ty) => {
         impl $crate::err::IntoResult for *mut $pointer {

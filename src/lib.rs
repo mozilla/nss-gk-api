@@ -13,13 +13,13 @@
 #![allow(clippy::used_underscore_binding)]
 
 #[macro_use]
-mod exp;
+pub mod err;
 #[macro_use]
-pub mod p11;
+mod exp;
 #[macro_use]
 mod util;
 
-mod err;
+pub mod p11;
 mod prio;
 mod ssl;
 pub mod time;
