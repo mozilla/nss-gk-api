@@ -24,7 +24,7 @@ mod prio;
 mod ssl;
 pub mod time;
 
-pub use err::{Error, PRErrorCode, Res};
+pub use err::{Error, IntoResult, secstatus_to_res};
 pub use p11::{PrivateKey, PublicKey, SymKey};
 pub use util::*;
 
@@ -55,10 +55,6 @@ mod nss {
 
 pub mod prtypes;
 pub use prtypes::*;
-
-fn secstatus_to_res(code: SECStatus) -> Res<()> {
-    crate::err::secstatus_to_res(code as SECStatus)
-}
 
 enum NssLoaded {
     External,
