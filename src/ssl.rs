@@ -16,10 +16,7 @@
 )]
 #![allow(unknown_lints, deref_nullptr)] // Until bindgen#1651 is fixed.
 
-use crate::constants::Epoch;
 use crate::err::{secstatus_to_res, Res};
-
-use std::os::raw::{c_uint, c_void};
 
 include!(concat!(env!("OUT_DIR"), "/nss_ssl.rs"));
 mod SSLOption {
@@ -85,6 +82,9 @@ impl Opt {
     }
 }
 
+/*
+ * TODO: these will be moved to a dedicated module
+ *
 experimental_api!(SSL_GetCurrentEpoch(
     fd: *mut PRFileDesc,
     read_epoch: *mut u16,
@@ -134,6 +134,7 @@ experimental_api!(SSL_GetResumptionTokenInfo(
 experimental_api!(SSL_DestroyResumptionTokenInfo(
     info: *mut SSLResumptionTokenInfo,
 ));
+*/
 
 #[cfg(test)]
 mod tests {

@@ -15,59 +15,17 @@
 #[macro_use]
 mod exp;
 #[macro_use]
-mod p11;
+pub mod p11;
 
-#[cfg(not(feature = "fuzzing"))]
-mod aead;
-
-#[cfg(feature = "fuzzing")]
-mod aead_fuzzing;
-
-pub mod agent;
-mod agentio;
-mod auth;
-mod cert;
-pub mod constants;
-mod ech;
 mod err;
-pub mod ext;
-pub mod hkdf;
-pub mod hp;
-mod once;
 mod prio;
-mod replay;
-mod secrets;
-pub mod selfencrypt;
 mod ssl;
-mod time;
+pub mod time;
 
-#[cfg(not(feature = "fuzzing"))]
-pub use self::aead::Aead;
+pub use err::{Error, PRErrorCode, Res};
+pub use p11::{PrivateKey, PublicKey, SymKey};
 
-#[cfg(feature = "fuzzing")]
-pub use self::aead_fuzzing::Aead;
-
-#[cfg(feature = "fuzzing")]
-pub use self::aead_fuzzing::FIXED_TAG_FUZZING;
-
-pub use self::agent::{
-    Agent, AllowZeroRtt, Client, HandshakeState, Record, RecordList, ResumptionToken, SecretAgent,
-    SecretAgentInfo, SecretAgentPreInfo, Server, ZeroRttCheckResult, ZeroRttChecker,
-};
-pub use self::auth::AuthenticationStatus;
-pub use self::constants::*;
-pub use self::ech::{
-    encode_config as encode_ech_config, generate_keys as generate_ech_keys, AeadId, KdfId, KemId,
-    SymmetricSuite,
-};
-pub use self::err::{Error, PRErrorCode, Res};
-pub use self::ext::{ExtensionHandler, ExtensionHandlerResult, ExtensionWriterResult};
-pub use self::p11::{random, PrivateKey, PublicKey, SymKey};
-pub use self::replay::AntiReplay;
-pub use self::secrets::SecretDirection;
-pub use self::ssl::Opt;
-
-use self::once::OnceResult;
+use once_cell::sync::OnceCell;
 
 use std::ffi::CString;
 use std::path::{Path, PathBuf};
@@ -103,7 +61,7 @@ impl Drop for NssLoaded {
     }
 }
 
-static mut INITIALIZED: OnceResult<NssLoaded> = OnceResult::new();
+static INITIALIZED: OnceCell<NssLoaded> = OnceCell::new();
 
 fn already_initialized() -> bool {
     unsafe { nss::NSS_IsInitialized() != 0 }
@@ -123,8 +81,8 @@ fn version_check() {
 pub fn init() {
     // Set time zero.
     time::init();
-    unsafe {
-        INITIALIZED.call_once(|| {
+    INITIALIZED.get_or_init(|| {
+        unsafe {
             version_check();
             if already_initialized() {
                 return NssLoaded::External;
@@ -134,8 +92,8 @@ pub fn init() {
             secstatus_to_res(nss::NSS_SetDomesticPolicy()).expect("NSS_SetDomesticPolicy failed");
 
             NssLoaded::NoDb
-        });
-    }
+        }
+    });
 }
 
 /// This enables SSLTRACE by calling a simple, harmless function to trigger its
@@ -155,8 +113,8 @@ fn enable_ssl_trace() {
 /// If NSS cannot be initialized.
 pub fn init_db<P: Into<PathBuf>>(dir: P) {
     time::init();
-    unsafe {
-        INITIALIZED.call_once(|| {
+    INITIALIZED.get_or_init(|| {
+        unsafe {
             version_check();
             if already_initialized() {
                 return NssLoaded::External;
@@ -189,16 +147,12 @@ pub fn init_db<P: Into<PathBuf>>(dir: P) {
             enable_ssl_trace();
 
             NssLoaded::Db(path.into_boxed_path())
-        });
-    }
+        }
+    });
 }
 
 /// # Panics
 /// If NSS isn't initialized.
 pub fn assert_initialized() {
-    unsafe {
-        INITIALIZED.call_once(|| {
-            panic!("NSS not initialized with init or init_db");
-        });
-    }
+    INITIALIZED.get().expect("NSS not initialized with init or init_db");
 }
