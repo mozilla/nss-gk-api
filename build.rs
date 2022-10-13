@@ -8,6 +8,7 @@
 #![warn(clippy::pedantic)]
 
 use bindgen::Builder;
+use bindgen::callbacks::{IntKind, ParseCallbacks};
 use serde_derive::Deserialize;
 use std::collections::HashMap;
 use std::collections::HashSet;
@@ -227,6 +228,27 @@ fn get_includes(nsstarget: &Path, nssdist: &Path) -> Vec<PathBuf> {
     includes
 }
 
+#[derive(Debug)]
+pub struct BindgenCallbacks;
+
+impl ParseCallbacks for BindgenCallbacks {
+    fn int_macro(&self, name: &str, _value: i64) -> Option<IntKind> {
+        match name {
+            "PR_FALSE" | "PR_TRUE" => Some(IntKind::I32),
+
+            // IntKind::USize does not exist. Use U16 so that Into<usize> is available.
+            "SHA256_LENGTH" => Some(IntKind::U16),
+            "AES_BLOCK_SIZE" => Some(IntKind::U16),
+
+            // CKO_* constants are ULONG in P11, but NSS also uses them with its
+            // own `enum PK11ObjectType`, which is not.
+            s if s.starts_with("CK") && !s.starts_with("CKO") => Some(IntKind::U64),
+
+            _ => None,
+        }
+    }
+}
+
 fn build_bindings(base: &str, bindings: &Bindings, flags: &[String], gecko: bool) {
     let suffix = if bindings.cplusplus { ".hpp" } else { ".h" };
     let header_path = PathBuf::from(BINDINGS_DIR).join(String::from(base) + suffix);
@@ -238,6 +260,7 @@ fn build_bindings(base: &str, bindings: &Bindings, flags: &[String], gecko: bool
     let mut builder = Builder::default().header(header);
     builder = builder.generate_comments(false);
     builder = builder.size_t_is_usize(true);
+    builder = builder.parse_callbacks(Box::new(BindgenCallbacks));
 
     builder = builder.clang_arg("-v");
 
