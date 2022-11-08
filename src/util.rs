@@ -30,8 +30,9 @@ macro_rules! scoped_ptr {
             ///
             /// # Errors
             /// When passed a null pointer generates an error.
-            pub unsafe fn from_ptr(ptr: *mut $target) -> Result<Self, $crate::err::Error> {
-                $crate::err::IntoResult::into_result(ptr)
+            pub unsafe fn from_ptr(raw: *mut $target) -> Result<Self, $crate::err::Error> {
+                let ptr = $crate::err::into_result(raw)?;
+                Ok(Self { ptr })
             }
         }
 
