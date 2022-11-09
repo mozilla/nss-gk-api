@@ -312,13 +312,15 @@ fn build_bindings(base: &str, bindings: &Bindings, flags: &[String], gecko: bool
 fn setup_standalone() -> Vec<String> {
     setup_clang();
 
-    println!("cargo:rerun-if-env-changed=NSS_DIR");
     let nss = nss_dir();
+    println!("cargo:rerun-if-env-changed={}", nss.display());
+
     build_nss(nss.clone());
 
     // $NSS_DIR/../dist/
     let nssdist = nss.parent().unwrap().join("dist");
-    println!("cargo:rerun-if-env-changed=NSS_TARGET");
+    println!("cargo:rerun-if-env-changed={}", nssdist.display());
+
     let nsstarget = env::var("NSS_TARGET")
         .unwrap_or_else(|_| fs::read_to_string(nssdist.join("latest")).unwrap());
     let nsstarget = nssdist.join(nsstarget.trim());
