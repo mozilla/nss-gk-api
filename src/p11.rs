@@ -42,6 +42,8 @@ pub use nss_p11::*;
 scoped_ptr!(Certificate, CERTCertificate, CERT_DestroyCertificate);
 scoped_ptr!(CertList, CERTCertList, CERT_DestroyCertList);
 
+scoped_ptr!(SubjectPublicKeyInfo, CERTSubjectPublicKeyInfo, SECKEY_DestroySubjectPublicKeyInfo);
+
 scoped_ptr!(PublicKey, SECKEYPublicKey, SECKEY_DestroyPublicKey);
 impl_clone!(PublicKey, SECKEY_CopyPublicKey);
 
