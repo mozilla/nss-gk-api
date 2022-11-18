@@ -56,6 +56,10 @@ mod nss {
 pub mod prtypes;
 pub use prtypes::*;
 
+// Shadow these bindgen created values to correct their type.
+pub const PR_FALSE: PRBool = prtypes::PR_FALSE as PRBool;
+pub const PR_TRUE: PRBool = prtypes::PR_TRUE as PRBool;
+
 enum NssLoaded {
     External,
     NoDb,
