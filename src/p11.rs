@@ -41,6 +41,10 @@ mod nss_p11 {
 use crate::prtypes::*;
 pub use nss_p11::*;
 
+// Shadow these bindgen created values to correct their type.
+pub const SHA256_LENGTH: usize = nss_p11::SHA256_LENGTH as usize;
+pub const AES_BLOCK_SIZE: usize = nss_p11::AES_BLOCK_SIZE as usize;
+
 scoped_ptr!(Certificate, CERTCertificate, CERT_DestroyCertificate);
 scoped_ptr!(CertList, CERTCertList, CERT_DestroyCertList);
 
