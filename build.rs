@@ -240,10 +240,6 @@ impl ParseCallbacks for BindgenCallbacks {
             "SHA256_LENGTH" => Some(IntKind::U16),
             "AES_BLOCK_SIZE" => Some(IntKind::U16),
 
-            // CKO_* constants are ULONG in P11, but NSS also uses them with its
-            // own `enum PK11ObjectType`, which is not.
-            s if s.starts_with("CK") && !s.starts_with("CKO") => Some(IntKind::U64),
-
             _ => None,
         }
     }
