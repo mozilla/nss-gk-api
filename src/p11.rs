@@ -12,6 +12,8 @@
 use crate::err::{secstatus_to_res, Error, Res};
 use crate::util::SECItemMut;
 
+use pkcs11_bindings::CKA_VALUE;
+
 use std::convert::TryFrom;
 use std::os::raw::{c_int, c_uint};
 
@@ -97,7 +99,7 @@ impl PrivateKey {
             PK11_ReadRawAttribute(
                 PK11ObjectType::PK11_TypePrivKey,
                 (**self).cast(),
-                CK_ATTRIBUTE_TYPE::from(CKA_VALUE),
+                CKA_VALUE,
                 key_item.as_mut(),
             )
         })?;
