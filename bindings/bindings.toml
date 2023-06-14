@@ -184,6 +184,8 @@ functions = [
     "PK11_PubDeriveWithKDF",
     "PK11_ReadRawAttribute",
     "PK11_ReferenceSymKey",
+    "PK11_SignWithMechanism",
+    "PK11_VerifyWithMechanism",
     "SECKEY_CopyPrivateKey",
     "SECKEY_CopyPublicKey",
     "SECKEY_DecodeDERSubjectPublicKeyInfo",
